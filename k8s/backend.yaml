@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: backend, version: v1 }
+  template:
+    metadata:
+      labels: { app: backend, version: v1 }
+    spec:
+      containers:
+        - name: backend
+          image: aminebougui/ecommerce-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MONGODB_URI
+              value: mongodb://mongo:27017/ecommerce
+            - name: CORS_ORIGIN
+              value: http://localhost:8080,http://127.0.0.1:8080
+          envFrom:
+            - secretRef:
+                name: backend-secrets
+          readinessProbe:
+            tcpSocket: { port: 3000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: 3000 }
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: ecommerce
+  labels: { app: backend }
+spec:
+  selector: { app: backend }
+  ports:
+    - name: http-backend
+      port: 3000
+      targetPort: 3000
