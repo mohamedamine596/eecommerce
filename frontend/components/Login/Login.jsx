@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation, replace } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./Login.css";
 import { loginUser } from "../../services/user.js";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import useUser from "../../context/UserContext/UserContext.jsx";
-import { useGoogleAuthLogin } from "../../services/googleLogin.js";
 import { showSuccessToast, showErrorToast } from "../../utiles/Toast/toast.js";
 import Loader from "../Loader/Loader.jsx";
+import GoogleAuthButton from "../GoogleAuthButton/GoogleAuthButton.jsx";
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,41 +14,37 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   // const [loginpage, setLoginPage] = useState(true);
-  const [usingGoogle, setUsingGoogle] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!usingGoogle) {
-      try {
-        setLoading(true);
-        const user = await loginUser({ email, password });
-        localStorage.setItem("user", JSON.stringify(user));
-        setUser(user);
-        const from = location.state?.from || "/";
-        navigate(from, { replace: true });
-        showSuccessToast(`Welcome ${user.username}`);
-      } catch (error) {
-        console.log(error);
-        showErrorToast(`${error?.response?.data?.message}`);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      setLoading(true);
+      const user = await loginUser({ email, password });
+      localStorage.setItem("user", JSON.stringify(user));
+      setUser(user);
+      const from = location.state?.from || "/";
+      navigate(from, { replace: true });
+      showSuccessToast(`Welcome ${user.username}`);
+    } catch (error) {
+      console.log(error);
+      showErrorToast(`${error?.response?.data?.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loginWithGoogle = useGoogleAuthLogin(
-    (user) => {
-      showSuccessToast(`Welcome ${user.username}!`);
-      localStorage.setItem("user", JSON.stringify(user));
-      const from = location.state?.from || "/";
-      navigate(from, { replace: true });
-      setUser(user);
-    },
-    (err) => {
-      showErrorToast(`Login failed! Please try again`);
-    }
-  );
+  const handleGoogleSuccess = (user) => {
+    showSuccessToast(`Welcome ${user.username}!`);
+    localStorage.setItem("user", JSON.stringify(user));
+    const from = location.state?.from || "/";
+    navigate(from, { replace: true });
+    setUser(user);
+  };
+
+  const handleGoogleError = () => {
+    showErrorToast("Login failed! Please try again");
+  };
 
   return (
     <>
@@ -110,22 +106,15 @@ function Login() {
         <button type="submit" className="login-submit-btn" disabled={loading}>
           Login
         </button>
-        <h2 className="OR">Or</h2>
-        <button
-          type="button"
-          className="google-btn"
-          onClick={() => {
-            setUsingGoogle(true);
-            loginWithGoogle();
-          }}
-        >
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt="Google"
-            style={{ width: "20px" }}
-          />
-          Continue with Google
-        </button>
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+          <>
+            <h2 className="OR">Or</h2>
+            <GoogleAuthButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+            />
+          </>
+        )}
       </form>
     </>
   );

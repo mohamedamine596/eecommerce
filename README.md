@@ -44,7 +44,7 @@ This repository contains a Node.js + Express backend and a React + Vite frontend
 
 - Node.js 18+
 - npm
-- MongoDB (Atlas or local)
+- MongoDB (Docker, Atlas, or local)
 - A Cloudinary account (optional for uploads)
 - Razorpay account/keys for payment testing (optional)
 
@@ -55,7 +55,7 @@ Create a `.env` file in `/backend` with at least the following keys:
 ```
 PORT=3000
 MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.example.mongodb.net/ecommerce
-CORS_ORIGIN=http://localhost:5174
+CORS_ORIGIN=http://localhost:5174,http://127.0.0.1:5174,http://172.20.10.3:5174,http://172.17.0.1:5174
 ACCESS_TOKEN_SECRET=your_access_token_secret
 REFRESH_TOKEN_SECRET=your_refresh_token_secret
 ACCESS_TOKEN_EXPIRY=15m
@@ -70,7 +70,18 @@ EMAIL_PASSWORD=your_email_password
 NODE_ENV=development
 ```
 
-The frontend uses `axios` to talk to the backend. If you change ports/origin, update `CORS_ORIGIN` accordingly.
+The frontend uses `axios` to talk to the backend. `CORS_ORIGIN` accepts a comma-separated list of frontend origins. Add the URL used in the browser when accessing the frontend from another device or network interface.
+
+Create `frontend/.env` when needed:
+
+```
+VITE_API_URL=http://localhost:3000/api/v1
+VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id
+```
+
+Google login is optional. If `VITE_GOOGLE_CLIENT_ID` is not configured, the email/password Login and Register forms remain available and the Google button is hidden.
+
+If the frontend is opened using a LAN address, either leave `VITE_API_URL` unset (the browser hostname is used automatically) or set it to the backend's LAN URL, for example `http://172.20.10.3:3000/api/v1`. The same frontend origin must also be included in the backend's `CORS_ORIGIN`.
 
 ## Running locally
 
@@ -102,9 +113,23 @@ From the project root run:
 
 - docker compose up --build
 
-This will build both `frontend` and `backend` services defined in `docker-compose.yml` and expose ports used in the compose file (frontend: 5174, backend: 3000).
+This builds the `frontend` and `backend` services and connects the backend to the MongoDB container already published on the Fedora host. On Fedora/Linux, the backend uses host networking so it can reach MongoDB on `127.0.0.1`. The services expose:
+
+- MongoDB: `localhost:27017`
+- Backend: `localhost:3000`
+- Frontend: `localhost:5174`
+
+When running in Compose, the backend connects to MongoDB using `mongodb://127.0.0.1:27017/ecommerce`.
 
 Note: The compose file mounts source directories for live development. Ensure Docker has access to your project files.
+
+If MongoDB is already running in a separate container with port `27017` published to the Fedora host, you can run the backend and frontend directly from the host. In that case, keep this backend setting:
+
+```
+MONGODB_URI=mongodb://127.0.0.1:27017/ecommerce
+```
+
+Do not use `mongodb://mongo:27017/ecommerce`; that hostname is not part of this setup. Use `mongodb://127.0.0.1:27017/ecommerce` when running `npm run dev` directly on Fedora.
 
 ## Seed data
 

@@ -14,12 +14,28 @@ dotenv.config({
   path: "./.env",
 });
 app.use(express.json());
+
+const allowedOrigins = (
+  process.env.CORS_ORIGIN || "http://localhost:5174"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: "https://e-commerce-website-three-drab.vercel.app",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS origin not allowed: ${origin}`));
+    },
     credentials: true,
   })
 );
+
 app.use(cookieParser());
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/products", productRouter);

@@ -1,7 +1,11 @@
 import axios from "axios";
 
+const apiBaseUrl =
+  import.meta.env.VITE_API_URL ||
+  `${window.location.protocol}//${window.location.hostname}:3000/api/v1`;
+
 const api = axios.create({
-  baseURL: "https://ecommerce-website-backend-r05z.onrender.com/api/v1",
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
 
@@ -40,7 +44,7 @@ api.interceptors.response.use(
 
       isRefreshing = true;
       try {
-        const res = await api.post("/user/refresh-token"); // 🍪 sets new token via cookie
+        await api.post("/user/refresh-token"); // 🍪 sets new token via cookie
         isRefreshing = false;
         processQueue(null);
         return api(originalRequest); // 🔁 retry

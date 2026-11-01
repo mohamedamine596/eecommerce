@@ -4,9 +4,9 @@ import { showErrorToast, showSuccessToast } from "../../utiles/Toast/toast.js";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser, sendOtp, verifyOtp } from "../../services/user.js";
 import useUser from "../../context/UserContext/UserContext.jsx";
-import { useGoogleAuthLogin } from "../../services/googleLogin.js";
 import Loader from "../Loader/Loader.jsx";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import GoogleAuthButton from "../GoogleAuthButton/GoogleAuthButton.jsx";
 // import VerifyOtp from "../VerifyOtp/VerifyOtp.jsx";
 function Register() {
   const [username, setUsername] = useState("");
@@ -15,38 +15,35 @@ function Register() {
   const navigate = useNavigate();
   const { setUser } = useUser();
   const [loading, setLoading] = useState(false);
-  const [usingGoogle, setUsingGoogle] = useState(false);
   const [showotpPage, setShowOtpPage] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
 
   const handleRegistration = async (e) => {
     e.preventDefault();
-    if (!usingGoogle) {
-      setLoading(true);
-      try {
-        await registerUser({ username, email, password });
-        await sendOtp(email, username, password, "register");
-        setShowOtpPage(true);
-      } catch (error) {
-        console.log(error);
-        showErrorToast(error?.response?.data?.message);
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    try {
+      await registerUser({ username, email, password });
+      await sendOtp(email, username, password, "register");
+      setShowOtpPage(true);
+    } catch (error) {
+      console.log(error);
+      showErrorToast(error?.response?.data?.message);
+    } finally {
+      setLoading(false);
     }
   };
-  const loginWithGoogle = useGoogleAuthLogin(
-    (user) => {
-      showSuccessToast(`Welcome ${user.username}!`);
-      localStorage.setItem("user", JSON.stringify(user));
-      navigate("/", { replace: true });
-      setUser(user);
-    },
-    (err) => {
-      showErrorToast(`Login failed! Please try again`);
-    }
-  );
+
+  const handleGoogleSuccess = (user) => {
+    showSuccessToast(`Welcome ${user.username}!`);
+    localStorage.setItem("user", JSON.stringify(user));
+    navigate("/", { replace: true });
+    setUser(user);
+  };
+
+  const handleGoogleError = () => {
+    showErrorToast("Login failed! Please try again");
+  };
   const handleOtpVerification = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -136,21 +133,15 @@ function Register() {
             <button type="submit" className="register-submit-btn">
               Request OTP
             </button>
-            <h2 className="or">Or</h2>
-            <button
-              className="google-btn"
-              onClick={() => {
-                setUsingGoogle(true);
-                loginWithGoogle();
-              }}
-            >
-              <img
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt="Google"
-                style={{ width: "20px" }}
-              />
-              Continue with Google
-            </button>
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <>
+                <h2 className="or">Or</h2>
+                <GoogleAuthButton
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                />
+              </>
+            )}
           </form>
         </>
       ) : (

@@ -26,6 +26,7 @@ import Wishlist from "../components/Wishlist/Wishlist.jsx";
 import ForgetPassword from "../components/ForgetPassword/ForgetPassword.jsx";
 import VerifyOtp from "../components/VerifyOtp/VerifyOtp.jsx";
 import ResetPassword from "../components/ResetPassword/ResetPassword.jsx";
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout />}>
@@ -55,10 +56,14 @@ const router = createBrowserRouter(
     hydrationData: null,
   }
 );
+const app = googleClientId ? (
+  <GoogleOAuthProvider clientId={googleClientId}>
+    <RouterProvider router={router} />
+  </GoogleOAuthProvider>
+) : (
+  <RouterProvider router={router} />
+);
+
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <RouterProvider router={router} />
-    </GoogleOAuthProvider>
-  </StrictMode>
+  <StrictMode>{app}</StrictMode>
 );
