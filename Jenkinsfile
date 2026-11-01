@@ -12,6 +12,26 @@ pipeline {
       }
     }
 
+    stage('SonarQube analysis') {
+      steps {
+        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+          sh '''
+            docker run --rm \
+              --network devops-net \
+              --volumes-from jenkins-local \
+              -w "$WORKSPACE" \
+              -e SONAR_HOST_URL=http://sonarqube:9000 \
+              -e SONAR_TOKEN \
+              sonarsource/sonar-scanner-cli \
+              -Dsonar.projectKey=ecommerce \
+              -Dsonar.sources=backend/src,frontend \
+              -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/*.backup \
+              -Dsonar.qualitygate.wait=true
+          '''
+        }
+      }
+    }
+
     stage('Build backend image') {
       steps {
         sh 'docker build -t ecommerce-backend:${IMAGE_TAG} ./backend'
